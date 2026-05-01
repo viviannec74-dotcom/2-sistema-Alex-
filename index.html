@@ -1185,29 +1185,37 @@ var DB = {
   },
 
   salvar: function(key, val, cb) {
-    // Salva IMEDIATAMENTE no localStorage
+    // Salva no localStorage imediatamente (UX rapida)
     this._lsSet(key, val);
-    if (cb) cb(true); // Sucesso instantaneo!
-    // Sincroniza com Firebase em background
+    // Salva no Firebase e confirma
     if (_db) {
       _db.ref('clientes/' + key).set(val, function(err) {
         if (err) console.warn('Firebase sync error:', err);
+        if (cb) cb(!err);
       });
+    } else {
+      if (cb) cb(true);
     }
   },
 
   carregar: function(key, cb) {
-    // Carrega do localStorage imediatamente
-    var local = this._lsGet();
-    if (local[key]) { cb(local[key]); }
-    else if (_db) {
-      // Tenta Firebase se nao tiver local
+    // Sempre carrega do Firebase (fonte de verdade)
+    // Garante que sessoes de qualquer profissional aparecem
+    if (_db) {
       _db.ref('clientes/' + key).once('value', function(snap) {
         var d = snap.val();
-        if (d) { DB._lsSet(key, d); }
-        cb(d);
+        if (d) { DB._lsSet(key, d); cb(d); }
+        else {
+          // Fallback para localStorage se Firebase vazio
+          var local = DB._lsGet();
+          cb(local[key] || null);
+        }
       });
-    } else { cb(null); }
+    } else {
+      // Sem Firebase: usa localStorage
+      var local = this._lsGet();
+      cb(local[key] || null);
+    }
   },
 
   deletar: function(key, cb) {
