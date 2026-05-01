@@ -1185,16 +1185,14 @@ var DB = {
   },
 
   salvar: function(key, val, cb) {
-    // Salva no localStorage imediatamente (UX rapida)
+    // Salva localStorage imediatamente — UX instantanea
     this._lsSet(key, val);
-    // Salva no Firebase e confirma
+    if (cb) cb(true);
+    // Sincroniza Firebase em background sem bloquear
     if (_db) {
       _db.ref('clientes/' + key).set(val, function(err) {
         if (err) console.warn('Firebase sync error:', err);
-        if (cb) cb(!err);
       });
-    } else {
-      if (cb) cb(true);
     }
   },
 
