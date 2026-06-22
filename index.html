@@ -896,13 +896,14 @@ input[type=file]{display:none}
       <div id="sub-tabela">
         <div style="overflow-x:auto">
           <table style="width:100%;border-collapse:collapse" id="tabela-precos">
+            <div style="font-size:.62rem;color:var(--silver);margin-bottom:8px">&#128204; Pagamento em dinheiro ou Pix: <strong style="color:var(--green)">10% de desconto</strong></div>
             <thead>
               <tr style="background:var(--n3);border-bottom:2px solid var(--bd)">
                 <th style="text-align:left;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Procedimento</th>
                 <th style="text-align:left;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Profissional</th>
                 <th style="text-align:center;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Sessao Avulsa</th>
-                <th style="text-align:center;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Pacote (qtd)</th>
-                <th style="text-align:center;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Valor Pacote</th>
+                <th style="text-align:center;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Pacote 10x</th>
+                <th style="text-align:center;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Pacote 5x</th>
               </tr>
             </thead>
             <tbody id="precos-tbody"></tbody>
@@ -1150,13 +1151,19 @@ var TRAT_PROF = {
   'Carboxiterapia CO2':'Dr. Alex Martinelli',
   'Mesoterapia Capilar':'Dr. Alex Martinelli',
   'Preenchimento':'Dr. Alex Martinelli',
-  'Criofrequencia':'Viviane Costa',
-  'Drenagem Linfatica':'Viviane Costa',
+  'Limpeza de Pele':'Viviane Costa',
+  'Drenagem Facial':'Viviane Costa',
+  'Sessao Avulsa Drenagem':'Viviane Costa',
   'Heccus Turbo':'Viviane Costa',
-  'Corrente Aussie':'Viviane Costa',
-  'Duet':'Viviane Costa',
+  'Drenagem Linfatica':'Viviane Costa',
+  'Massagem Modeladora':'Viviane Costa',
   'Endermologia':'Viviane Costa',
-  'Limpeza de Pele':'Viviane Costa'
+  'Criofrequencia':'Viviane Costa',
+  'Massagem Local':'Viviane Costa',
+  'Lipocavitacao':'Viviane Costa',
+  'Criofrequencia por Area':'Viviane Costa',
+  'Corrente Aussie':'Viviane Costa',
+  'Duet':'Viviane Costa'
 };
 
 var TRAT_ICONS = {
@@ -2872,22 +2879,50 @@ function trocarSubPrecos(btn, sub) {
   if (sub === 'promo') renderPromocoes();
 }
 
+var PRECOS_DEFAULT = {
+  'Limpeza de Pele':        { avulsa:'R$ 239,90', qtdPacote:'', valorPacote:'' },
+  'Drenagem Facial':        { avulsa:'R$ 150,00', qtdPacote:'', valorPacote:'' },
+  'Sessao Avulsa Drenagem': { avulsa:'R$ 200,00', qtdPacote:'', valorPacote:'' },
+  'Heccus Turbo':           { avulsa:'', qtdPacote:'10x', valorPacote:'R$ 1.500,00' },
+  'Drenagem Linfatica':     { avulsa:'', qtdPacote:'10x', valorPacote:'R$ 1.600,00' },
+  'Massagem Modeladora':    { avulsa:'', qtdPacote:'10x', valorPacote:'R$ 1.700,00' },
+  'Endermologia':           { avulsa:'', qtdPacote:'10x', valorPacote:'R$ 1.250,00' },
+  'Criofrequencia':         { avulsa:'', qtdPacote:'5x', valorPacote:'R$ 1.500,00' },
+  'Massagem Local':         { avulsa:'', qtdPacote:'10x', valorPacote:'R$ 1.300,00' },
+  'Lipocavitacao':          { avulsa:'', qtdPacote:'10x', valorPacote:'R$ 1.295,00' },
+  'Criofrequencia por Area':{ avulsa:'1 area R$300 | 2 areas R$590 | 3 areas R$850 | +3 R$180/area', qtdPacote:'', valorPacote:'' },
+};
+
+var PRECOS_5SESS = {
+  'Heccus Turbo':        'R$ 825,00',
+  'Drenagem Linfatica':  'R$ 900,00',
+  'Massagem Modeladora': 'R$ 900,00',
+  'Endermologia':        'R$ 700,00',
+  'Massagem Local':      'R$ 700,00',
+  'Lipocavitacao':       'R$ 655,00',
+};
+
 function renderTabelaPrecos() {
   DB._ready(function() {
     _db.ref('precos').once('value', function(snap) {
-      var dados = snap.val() || {};
+      var saved = snap.val() || {};
+      var dados = {};
+      // Merge defaults with saved values (saved takes priority)
+      Object.keys(PRECOS_DEFAULT).forEach(function(k) { dados[k] = PRECOS_DEFAULT[k]; });
+      Object.keys(saved).forEach(function(k) { dados[k] = saved[k]; });
       var tbody = document.getElementById('precos-tbody');
       var html = '';
       Object.keys(TRAT_PROF).forEach(function(trat, i) {
         var prof = TRAT_PROF[trat];
         var d = dados[trat] || {};
         var corProf = prof === 'Dr. Alex Martinelli' ? '#5b9fd4' : '#c9a84c';
+        var p5 = PRECOS_5SESS[trat] || (d.valor5sess || '');
         html += '<tr class="preco-row" style="border-bottom:1px solid rgba(201,168,76,.08)">' +
           '<td style="padding:7px 10px;font-size:.78rem;font-weight:600;color:var(--white)">'+trat+'</td>' +
           '<td style="padding:7px 10px"><span style="font-size:.62rem;font-weight:700;color:'+corProf+'">'+prof+'</span></td>' +
           '<td style="padding:4px 6px;text-align:center"><input type="text" id="pv-'+i+'" placeholder="R$ 0,00" value="'+(d.avulsa||'')+'" style="text-align:center"></td>' +
-          '<td style="padding:4px 6px;text-align:center"><input type="text" id="pq-'+i+'" placeholder="ex: 5x" value="'+(d.qtdPacote||'')+'" style="text-align:center"></td>' +
-          '<td style="padding:4px 6px;text-align:center"><input type="text" id="pp-'+i+'" placeholder="R$ 0,00" value="'+(d.valorPacote||'')+'" style="text-align:center"></td>' +
+          '<td style="padding:4px 6px;text-align:center"><input type="text" id="pq-'+i+'" placeholder="R$ 0,00" value="'+(d.valorPacote||'')+'" style="text-align:center"></td>' +
+          '<td style="padding:4px 6px;text-align:center"><input type="text" id="pp-'+i+'" placeholder="R$ 0,00" value="'+p5+'" style="text-align:center"></td>' +
           '</tr>';
       });
       tbody.innerHTML = html;
@@ -3257,4 +3292,3 @@ setTimeout(function() {
 </script>
 </body>
 </html>
-  
