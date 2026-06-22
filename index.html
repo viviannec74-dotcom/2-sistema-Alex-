@@ -2903,13 +2903,11 @@ var PRECOS_5SESS = {
 };
 
 function renderTabelaPrecos() {
-  DB._ready(function() {
-    _db.ref('precos').once('value', function(snap) {
-      var saved = snap.val() || {};
-      var dados = {};
-      // Merge defaults with saved values (saved takes priority)
-      Object.keys(PRECOS_DEFAULT).forEach(function(k) { dados[k] = PRECOS_DEFAULT[k]; });
-      Object.keys(saved).forEach(function(k) { dados[k] = saved[k]; });
+  function _buildTabela(saved) {
+    saved = saved || {};
+    var dados = {};
+    Object.keys(PRECOS_DEFAULT).forEach(function(k) { dados[k] = PRECOS_DEFAULT[k]; });
+    Object.keys(saved).forEach(function(k) { dados[k] = saved[k]; });
       var tbody = document.getElementById('precos-tbody');
       var html = '';
       Object.keys(TRAT_PROF).forEach(function(trat, i) {
@@ -2926,26 +2924,35 @@ function renderTabelaPrecos() {
           '</tr>';
       });
       tbody.innerHTML = html;
+  }
+  if (_db) {
+    _db.ref('precos').once('value', function(snap) {
+      _buildTabela(snap.val());
     });
-  });
+  } else {
+    // Sem Firebase: usa so os defaults
+    _buildTabela({});
+  }
 }
 
 function salvarPrecos() {
   var dados = {};
   Object.keys(TRAT_PROF).forEach(function(trat, i) {
     var avulsa = (document.getElementById('pv-'+i)||{}).value || '';
-    var qtdPacote = (document.getElementById('pq-'+i)||{}).value || '';
-    var valorPacote = (document.getElementById('pp-'+i)||{}).value || '';
-    if (avulsa || qtdPacote || valorPacote) {
-      dados[trat] = { avulsa: avulsa, qtdPacote: qtdPacote, valorPacote: valorPacote };
+    var pacote10 = (document.getElementById('pq-'+i)||{}).value || '';
+    var pacote5  = (document.getElementById('pp-'+i)||{}).value || '';
+    if (avulsa || pacote10 || pacote5) {
+      dados[trat] = { avulsa: avulsa, valorPacote: pacote10, valor5sess: pacote5 };
     }
   });
-  DB._ready(function() {
+  if (_db) {
     _db.ref('precos').set(dados, function(err) {
       if (!err) toast('Tabela de precos salva!');
       else toast('Erro ao salvar.', 'err');
     });
-  });
+  } else {
+    toast('Sem conexao Firebase', 'err');
+  }
 }
 
 var PROMOCOES_MES = [
