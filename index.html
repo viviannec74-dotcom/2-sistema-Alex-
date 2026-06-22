@@ -2903,56 +2903,52 @@ var PRECOS_5SESS = {
 };
 
 function renderTabelaPrecos() {
-  function _buildTabela(saved) {
-    saved = saved || {};
-    var dados = {};
-    Object.keys(PRECOS_DEFAULT).forEach(function(k) { dados[k] = PRECOS_DEFAULT[k]; });
-    Object.keys(saved).forEach(function(k) { dados[k] = saved[k]; });
+  DB._ready(function() {
+    _db.ref('precos').once('value', function(snap) {
+      var dados = snap.val() || {};
       var tbody = document.getElementById('precos-tbody');
-      var html = '';
-      Object.keys(TRAT_PROF).forEach(function(trat, i) {
-        var prof = TRAT_PROF[trat];
-        var d = dados[trat] || {};
-        var corProf = prof === 'Dr. Alex Martinelli' ? '#5b9fd4' : '#c9a84c';
-        var p5 = PRECOS_5SESS[trat] || (d.valor5sess || '');
+      var html = '<tr style="background:rgba(201,168,76,.08)"><td colspan="4" style="padding:8px 10px;font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold)">Viviane Costa - Estetica Avancada</td></tr>';
+      var i = 0;
+      Object.keys(TRAT_PROF).forEach(function(trat) {
+        if (TRAT_PROF[trat] !== 'Viviane Costa') return;
+        var saved = dados[trat] || {};
+        var def = PRECOS_DEFAULT[trat] || {};
+        var d = {
+          avulsa: saved.avulsa !== undefined ? saved.avulsa : (def.avulsa || ''),
+          qtdPacote: saved.qtdPacote !== undefined ? saved.qtdPacote : (def.qtdPacote || ''),
+          valorPacote: saved.valorPacote !== undefined ? saved.valorPacote : (def.valorPacote || '')
+        };
         html += '<tr class="preco-row" style="border-bottom:1px solid rgba(201,168,76,.08)">' +
           '<td style="padding:7px 10px;font-size:.78rem;font-weight:600;color:var(--white)">'+trat+'</td>' +
-          '<td style="padding:7px 10px"><span style="font-size:.62rem;font-weight:700;color:'+corProf+'">'+prof+'</span></td>' +
-          '<td style="padding:4px 6px;text-align:center"><input type="text" id="pv-'+i+'" placeholder="R$ 0,00" value="'+(d.avulsa||'')+'" style="text-align:center"></td>' +
-          '<td style="padding:4px 6px;text-align:center"><input type="text" id="pq-'+i+'" placeholder="R$ 0,00" value="'+(d.valorPacote||'')+'" style="text-align:center"></td>' +
-          '<td style="padding:4px 6px;text-align:center"><input type="text" id="pp-'+i+'" placeholder="R$ 0,00" value="'+p5+'" style="text-align:center"></td>' +
+          '<td style="padding:4px 6px;text-align:center"><input type="text" id="pv-'+i+'" placeholder="R$ 0,00" value="'+d.avulsa+'" style="text-align:center"></td>' +
+          '<td style="padding:4px 6px;text-align:center"><input type="text" id="pq-'+i+'" placeholder="ex: 5x" value="'+d.qtdPacote+'" style="text-align:center"></td>' +
+          '<td style="padding:4px 6px;text-align:center"><input type="text" id="pp-'+i+'" placeholder="R$ 0,00" value="'+d.valorPacote+'" style="text-align:center"></td>' +
           '</tr>';
+        i++;
       });
       tbody.innerHTML = html;
-  }
-  if (_db) {
-    _db.ref('precos').once('value', function(snap) {
-      _buildTabela(snap.val());
     });
-  } else {
-    // Sem Firebase: usa so os defaults
-    _buildTabela({});
-  }
+  });
 }
-
 function salvarPrecos() {
   var dados = {};
-  Object.keys(TRAT_PROF).forEach(function(trat, i) {
+  var i = 0;
+  Object.keys(TRAT_PROF).forEach(function(trat) {
+    if (TRAT_PROF[trat] !== 'Viviane Costa') return;
     var avulsa = (document.getElementById('pv-'+i)||{}).value || '';
-    var pacote10 = (document.getElementById('pq-'+i)||{}).value || '';
-    var pacote5  = (document.getElementById('pp-'+i)||{}).value || '';
-    if (avulsa || pacote10 || pacote5) {
-      dados[trat] = { avulsa: avulsa, valorPacote: pacote10, valor5sess: pacote5 };
+    var qtdPacote = (document.getElementById('pq-'+i)||{}).value || '';
+    var valorPacote = (document.getElementById('pp-'+i)||{}).value || '';
+    if (avulsa || qtdPacote || valorPacote) {
+      dados[trat] = { avulsa: avulsa, qtdPacote: qtdPacote, valorPacote: valorPacote };
     }
+    i++;
   });
-  if (_db) {
+  DB._ready(function() {
     _db.ref('precos').set(dados, function(err) {
       if (!err) toast('Tabela de precos salva!');
       else toast('Erro ao salvar.', 'err');
     });
-  } else {
-    toast('Sem conexao Firebase', 'err');
-  }
+  });
 }
 
 var PROMOCOES_MES = [
