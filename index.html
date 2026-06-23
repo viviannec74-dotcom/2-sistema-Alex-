@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -710,7 +711,14 @@ input[type=file]{display:none}
           </div>
           <div style="overflow-x:auto">
             <table class="mtable" id="med-t">
-              <thead><tr id="med-head"><th>Regiao</th><th>Inicial</th><th>Sessao 1</th><th>Sessao 2</th><th>Sessao 3</th><th>Total</th></tr></thead>
+              <thead>
+              <tr style="background:rgba(201,168,76,.12);border-bottom:2px solid var(--bd)">
+                <th style="text-align:left;padding:9px 12px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Procedimento</th>
+                <th style="text-align:center;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Sessao Avulsa</th>
+                <th style="text-align:center;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Pacote</th>
+                <th style="text-align:center;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Valor Pacote</th>
+              </tr>
+            </thead>
               <tbody id="med-body"></tbody>
             </table>
           </div>
@@ -898,12 +906,11 @@ input[type=file]{display:none}
           <table style="width:100%;border-collapse:collapse" id="tabela-precos">
             <div style="font-size:.62rem;color:var(--silver);margin-bottom:8px">&#128204; Pagamento em dinheiro ou Pix: <strong style="color:var(--green)">10% de desconto</strong></div>
             <thead>
-              <tr style="background:var(--n3);border-bottom:2px solid var(--bd)">
-                <th style="text-align:left;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Procedimento</th>
-                <th style="text-align:left;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Profissional</th>
+              <tr style="background:rgba(201,168,76,.12);border-bottom:2px solid var(--bd)">
+                <th style="text-align:left;padding:9px 12px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Procedimento</th>
                 <th style="text-align:center;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Sessao Avulsa</th>
-                <th style="text-align:center;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Pacote 10x</th>
-                <th style="text-align:center;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Pacote 5x</th>
+                <th style="text-align:center;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Pacote</th>
+                <th style="text-align:center;padding:9px 10px;font-size:.6rem;color:var(--g2);text-transform:uppercase;letter-spacing:.1em">Valor Pacote</th>
               </tr>
             </thead>
             <tbody id="precos-tbody"></tbody>
@@ -2903,32 +2910,39 @@ var PRECOS_5SESS = {
 };
 
 function renderTabelaPrecos() {
-  DB._ready(function() {
-    _db.ref('precos').once('value', function(snap) {
-      var dados = snap.val() || {};
-      var tbody = document.getElementById('precos-tbody');
-      var html = '<tr style="background:rgba(201,168,76,.08)"><td colspan="4" style="padding:8px 10px;font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold)">Viviane Costa - Estetica Avancada</td></tr>';
-      var i = 0;
-      Object.keys(TRAT_PROF).forEach(function(trat) {
-        if (TRAT_PROF[trat] !== 'Viviane Costa') return;
-        var saved = dados[trat] || {};
-        var def = PRECOS_DEFAULT[trat] || {};
-        var d = {
-          avulsa: saved.avulsa !== undefined ? saved.avulsa : (def.avulsa || ''),
-          qtdPacote: saved.qtdPacote !== undefined ? saved.qtdPacote : (def.qtdPacote || ''),
-          valorPacote: saved.valorPacote !== undefined ? saved.valorPacote : (def.valorPacote || '')
-        };
-        html += '<tr class="preco-row" style="border-bottom:1px solid rgba(201,168,76,.08)">' +
-          '<td style="padding:7px 10px;font-size:.78rem;font-weight:600;color:var(--white)">'+trat+'</td>' +
-          '<td style="padding:4px 6px;text-align:center"><input type="text" id="pv-'+i+'" placeholder="R$ 0,00" value="'+d.avulsa+'" style="text-align:center"></td>' +
-          '<td style="padding:4px 6px;text-align:center"><input type="text" id="pq-'+i+'" placeholder="ex: 5x" value="'+d.qtdPacote+'" style="text-align:center"></td>' +
-          '<td style="padding:4px 6px;text-align:center"><input type="text" id="pp-'+i+'" placeholder="R$ 0,00" value="'+d.valorPacote+'" style="text-align:center"></td>' +
-          '</tr>';
-        i++;
-      });
-      tbody.innerHTML = html;
+  // Renderiza imediatamente com valores default
+  function buildTabela(dados) {
+    dados = dados || {};
+    var tbody = document.getElementById('precos-tbody');
+    if (!tbody) return;
+    var html = '';
+    var i = 0;
+    Object.keys(TRAT_PROF).forEach(function(trat, i) {
+      var saved = dados[trat] || {};
+      var def = PRECOS_DEFAULT[trat] || {};
+      var d = {
+        avulsa: saved.avulsa !== undefined ? saved.avulsa : (def.avulsa || ''),
+        qtdPacote: saved.qtdPacote !== undefined ? saved.qtdPacote : (def.qtdPacote || ''),
+        valorPacote: saved.valorPacote !== undefined ? saved.valorPacote : (def.valorPacote || '')
+      };
+      html += '<tr class="preco-row" style="border-bottom:1px solid rgba(201,168,76,.1)">' +
+        '<td style="padding:8px 10px;font-size:.8rem;font-weight:600;color:var(--white)">' + trat + '</td>' +
+        '<td style="padding:5px 8px;text-align:center"><input type="text" id="pv-' + i + '" value="' + d.avulsa + '" placeholder="R$ 0,00" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:6px;color:var(--white);font-family:Outfit,sans-serif;font-size:.76rem;padding:5px 8px;text-align:center"></td>' +
+        '<td style="padding:5px 8px;text-align:center"><input type="text" id="pq-' + i + '" value="' + d.qtdPacote + '" placeholder="ex: 10x" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:6px;color:var(--white);font-family:Outfit,sans-serif;font-size:.76rem;padding:5px 8px;text-align:center"></td>' +
+        '<td style="padding:5px 8px;text-align:center"><input type="text" id="pp-' + i + '" value="' + d.valorPacote + '" placeholder="R$ 0,00" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:6px;color:var(--white);font-family:Outfit,sans-serif;font-size:.76rem;padding:5px 8px;text-align:center"></td>' +
+        '</tr>';
+      i++;
     });
-  });
+    tbody.innerHTML = html;
+  }
+  // Mostra com defaults imediatamente
+  buildTabela({});
+  // Atualiza com Firebase se disponivel
+  if (_db) {
+    _db.ref('precos').once('value', function(snap) {
+      buildTabela(snap.val() || {});
+    });
+  }
 }
 function salvarPrecos() {
   var dados = {};
